@@ -112,12 +112,10 @@ contract viewModule is internalModule {
         vars.len = registeredPoints.length;
         vars.memTotalDeposit = totalDeposited;
 
-        // vars.tmpPassedPoint = vars.memPassedPoint = passedPoint;
         if(fromBlockNumber == 0){
             vars.tmpPassedPoint = vars.memPassedPoint = 0;
 
             vars.memThisBlockNum = block.number;
-            // vars.tmpLastBlockNum = vars.memLastBlockNum = lastBlockNum;
             vars.tmpLastBlockNum = vars.memLastBlockNum = 0;
             vars.tmpRewardLane = vars.memRewardLane = 0;
             vars.tmpRewardPerBlock = vars.memRewardPerBlock = 0;
@@ -125,7 +123,6 @@ contract viewModule is internalModule {
         } else {
             vars.tmpPassedPoint = vars.memPassedPoint = passedPoint;
             vars.memThisBlockNum = block.number;
-            // vars.tmpLastBlockNum = vars.memLastBlockNum = lastBlockNum;
             vars.tmpLastBlockNum = vars.memLastBlockNum = fromBlockNumber;
 
             vars.tmpRewardLane = vars.memRewardLane = rewardLane;
@@ -182,7 +179,13 @@ contract viewModule is internalModule {
         }
         return vars.tmpRewardLane;
     }
-
+    /**
+     * @notice Get The rewardPerBlock of user in suggested period(see params)
+     * @param userAddr The Address of user, 0 for total
+     * @param fromBlockNumber calculation start block number
+     * @param toBlockNumber calculation end block number
+     * @notice this function calculate based on current contract state
+     */
     function getPoolRate(address userAddr, uint256 fromBlockNumber, uint256 toBlockNumber) internal view returns (uint256) {
         UpdateRewardLaneModel memory vars;
 
