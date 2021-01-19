@@ -1,27 +1,32 @@
-//"SPDX-License-Identifier: UNLICENSED"
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.6.12;
 
 import "../ERC20.sol";
 
+/**
+ * @title BiFi's Reward Distribution Storage Contract
+ * @notice Define the basic Contract State
+ * @author BiFi(seinmyung25, Miller-kk, tlatkdgus1, dongchangYoo)
+ */
 contract storageModule {
-    address owner;
+    address public owner;
 
-    bool claimLock = false;
-    bool withdrawLock = false;
+    bool public claimLock;
+    bool public withdrawLock;
 
-    uint256 rewardPerBlock;
-    uint256 decrementUnitPerBlock;
-    uint256 rewardLane;
+    uint256 public rewardPerBlock;
+    uint256 public decrementUnitPerBlock;
+    uint256 public rewardLane;
 
-    uint256 lastBlockNum;
-    uint256 totalDeposited;
+    uint256 public lastBlockNum;
+    uint256 public totalDeposited;
 
-    ERC20 lpErc; ERC20 rewardErc;
+    ERC20 public lpErc; ERC20 public rewardErc;
 
-    mapping(address => Account) accounts;
+    mapping(address => Account) public accounts;
 
-    uint256 passedPoint;
-    RewardVelocityPoint[] registeredPoints;
+    uint256 public passedPoint;
+    RewardVelocityPoint[] public registeredPoints;
 
     struct Account {
         uint256 deposited;

@@ -1,4 +1,4 @@
-//"SPDX-License-Identifier: UNLICENSED"
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.6.12;
 
 import "./safeMath.sol";
@@ -6,9 +6,10 @@ import "./storageModule.sol";
 import "./eventModule.sol";
 
 /**
- * @title Liquidity staking service contracts (internal)
+ * @title BiFi's Reward Distribution Internal Contract
  * @notice Implement the basic functions for staking and reward distribution
  * @dev All functions are internal.
+ * @author BiFi(seinmyung25, Miller-kk, tlatkdgus1, dongchangYoo)
  */
 contract internalModule is storageModule, eventModule, safeMathModule {
     /**
@@ -28,7 +29,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         if(amount > 0) {
             /// @dev transfer the Contribution Toknes to this contract.
             emit Deposit(userAddr, amount, user.deposited, totalDeposit);
-            lpErc.transferFrom(msg.sender, address(this), amount);
+            require( lpErc.transferFrom(msg.sender, address(this), amount), "token error" );
         }
     }
 
@@ -50,7 +51,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         if(amount > 0) {
             /// @dev transfer the Contribution Tokens from this contact.
             emit Withdraw(userAddr, amount, user.deposited, totalDeposit);
-            lpErc.transfer(userAddr, amount);
+            require( lpErc.transfer(userAddr, amount), "token error" );
         }
     }
 
@@ -86,7 +87,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
 
             /// @dev transfer the Reward Tokens from this contract.
             emit Claim(userAddr, amount);
-            rewardErc.transfer(userAddr, amount);
+            require(rewardErc.transfer(userAddr, amount), "token error" );
         }
     }
 
@@ -114,10 +115,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
 
         for(uint256 i=vars.memPassedPoint; i<vars.len; i++) {
             RewardVelocityPoint memory point = registeredPoints[i];
-            if(point.blockNumber == 0) {
-                vars.tmpPassedPoint = i+1;
-                continue;
-            }
+
             /**
              * @dev Check whether this reward velocity point is valid and has
                not applied yet.
@@ -153,7 +151,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
          * @dev Update the reward lane for the remained period between the
            latest velocity point and this moment (block)
          */
-        if(vars.memThisBlockNum > vars.tmpLastBlockNum) {
+        if( vars.tmpLastBlockNum < vars.memThisBlockNum ) {
             vars.tmpBlockDelta = safeSub(vars.memThisBlockNum, vars.tmpLastBlockNum);
             vars.tmpLastBlockNum = vars.memThisBlockNum;
             (vars.tmpRewardLane, vars.tmpRewardPerBlock) =
@@ -190,15 +188,22 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         uint256 _rewardPerBlock,
         uint256 _decrementUnitPerBlock,
         uint256 delta) internal pure returns (uint256, uint256) {
-            uint256 executableDelta = safeDiv(_rewardPerBlock, _decrementUnitPerBlock);
-            if(delta > executableDelta) delta = executableDelta;
-            _rewardPerBlock = _getNewRewardPerBlock(_rewardPerBlock, _decrementUnitPerBlock, delta);
-
-            if(_totalDeposit != 0) {
-                uint256 distance = expMul( _meanOfInactiveLane(_rewardPerBlock, delta, _decrementUnitPerBlock), safeMul( expDiv(one, _totalDeposit), delta) );
-                _rewardLane = safeAdd(_rewardLane, distance);
-                return (_rewardLane, _rewardPerBlock);
+            uint256 executableDelta;
+            if(_decrementUnitPerBlock != 0) {
+                executableDelta = safeDiv(_rewardPerBlock, _decrementUnitPerBlock);
+                if(delta > executableDelta) delta = executableDelta;
+                else executableDelta = 0;
             }
+
+            uint256 distance;
+            if(_totalDeposit != 0) {
+                distance = expMul( _sequencePartialSumAverage(_rewardPerBlock, delta, _decrementUnitPerBlock), safeMul( expDiv(one, _totalDeposit), delta) );
+                _rewardLane = safeAdd(_rewardLane, distance);
+            }
+
+            if(executableDelta != 0) _rewardPerBlock = 0;
+            else _rewardPerBlock = _getNewRewardPerBlock(_rewardPerBlock, _decrementUnitPerBlock, delta);
+
             return (_rewardLane, _rewardPerBlock);
     }
 
@@ -228,8 +233,11 @@ contract internalModule is storageModule, eventModule, safeMathModule {
 
         RewardVelocityPoint memory point = registeredPoints[_index];
         emit DeleteRegisterRewardParams(_index, point.blockNumber, point.rewardPerBlock, point.decrementUnitPerBlock, len-1);
-        delete registeredPoints[_index];
-    }
+        for(uint256 i=_index; i<len-1; i++) {
+            registeredPoints[i] = registeredPoints[i+1];
+        }
+        registeredPoints.pop();
+     }
 
     /**
      * @notice Set paramaters for the reward distribution
@@ -246,7 +254,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
      * @return the avaerage of the RewardLance of the inactive (i.e., no-action)
        periods.
     */
-    function _meanOfInactiveLane(uint256 a, uint256 n, uint256 d) internal pure returns (uint256) {
+    function _sequencePartialSumAverage(uint256 a, uint256 n, uint256 d) internal pure returns (uint256) {
         /**
         @dev return Sn / n,
                 where Sn = ( (n{2*a + (n-1)d}) / 2 )

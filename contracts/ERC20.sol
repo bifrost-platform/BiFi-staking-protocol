@@ -1,11 +1,10 @@
-//"SPDX-License-Identifier: UNLICENSED"
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.6.12;
 
-// ----------------------------------------------------------------------------------------------
-// Sample fixed supply token contract
-// Enjoy. (c) BokkyPooBah 2017. The MIT Licence.
-// ----------------------------------------------------------------------------------------------
-
+/**
+ * @title BiFi's ERC20 Mockup Contract
+ * @author BiFi(seinmyung25, Miller-kk, tlatkdgus1, dongchangYoo)
+ */
 contract ERC20 {
     string symbol;
     string name;
@@ -93,13 +92,13 @@ contract ERC20 {
 }
 
 contract BFCtoken is ERC20 {
-    constructor() public ERC20 ("BFCtoken", "BFC") {}
+    constructor() public ERC20 ("Bifrost", "BFC") {}
 }
 
 contract LPtoken is ERC20 {
-    constructor() public ERC20 ("LPtoken", "LPT") {}
+    constructor() public ERC20 ("BFC-ETH", "LP") {}
 }
 
-contract REtoken is ERC20 {
-    constructor() public ERC20 ("REtoken", "RET") {}
+contract BiFitoken is ERC20 {
+    constructor() public ERC20 ("BiFi", "BiFi") {}
 }
