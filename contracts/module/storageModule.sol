@@ -9,12 +9,12 @@ contract storageModule {
     bool claimLock = false;
     bool withdrawLock = false;
 
-    uint256 rewardPerBlock = 0;
-    uint256 decrementUnitPerBlock = 0;
-    uint256 rewardLane = 0;
+    uint256 rewardPerBlock;
+    uint256 decrementUnitPerBlock;
+    uint256 rewardLane;
 
-    uint256 lastBlockNum = 0;
-    uint256 totalDeposited = 0;
+    uint256 lastBlockNum;
+    uint256 totalDeposited;
 
     ERC20 lpErc; ERC20 rewardErc;
 

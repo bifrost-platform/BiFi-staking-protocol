@@ -33,6 +33,16 @@ contract externalModule is viewModule {
     }
 
     /**
+     * @notice Deposit the Contribution Tokens by another
+     * @param amount The amount of the Contribution Tokens
+     * @param userAddr The Address of Deposit Target
+     */
+    function depositTo(address userAddr, uint256 amount) external {
+        _redeemAll(userAddr);
+        _deposit(userAddr, amount);
+    }
+
+    /**
      * @notice Withdraw the Contribution Tokens
      * @param amount The amount of the Contribution Tokens
      */
@@ -51,13 +61,25 @@ contract externalModule is viewModule {
         _redeemAll(userAddr);
         _rewardClaim(userAddr);
     }
+    /**
+     * @notice Claim the Reward Tokens by another
+     * @param userAddr The Address of Claim Target
+     * @dev Transfer all reward the user has earned at once.
+     */
+    function rewardClaimTo(address userAddr) checkClaimLocked external {
+        _redeemAll(userAddr);
+        _rewardClaim(userAddr);
+    }
 
-    /// @dev Set locks
+    /// @dev Set locks & access control
     function setClaimLock(bool lock) onlyOwner external {
         _setClaimLock(lock);
     }
     function setWithdrawLock(bool lock) onlyOwner external {
         _setWithdrawLock(lock);
+    }
+    function ownershipTransfer(address to) onlyOwner external {
+        _ownershipTransfer(to);
     }
 
     /**
@@ -65,10 +87,11 @@ contract externalModule is viewModule {
      */
     function registerRewardVelocity(uint256 _blockNumber, uint256 _rewardPerBlock, uint256 _decrementUnitPerBlock) onlyOwner external {
         require(_blockNumber > block.number, "new Reward params should register earlier");
-        // require(_blockNumber > registeredPoints[registeredPoints.length], "Earilier velocity points are already set.")
+        require(registeredPoints.length == 0 || _blockNumber > registeredPoints[registeredPoints.length-1].blockNumber, "Earilier velocity points are already set.");
         _registerRewardVelocity(_blockNumber, _rewardPerBlock, _decrementUnitPerBlock);
     }
     function deleteRegisteredRewardVelocity(uint256 _index) onlyOwner external {
+        require(_index >= passedPoint, "Reward velocity point already apssed.");
         _deleteRegisteredRewardVelocity(_index);
     }
 

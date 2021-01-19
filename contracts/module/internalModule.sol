@@ -28,7 +28,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         if(amount > 0) {
             /// @dev transfer the Contribution Toknes to this contract.
             emit Deposit(userAddr, amount, user.deposited, totalDeposit);
-            lpErc.transferFrom(userAddr, address(this), amount);
+            lpErc.transferFrom(msg.sender, address(this), amount);
         }
     }
 
@@ -114,6 +114,10 @@ contract internalModule is storageModule, eventModule, safeMathModule {
 
         for(uint256 i=vars.memPassedPoint; i<vars.len; i++) {
             RewardVelocityPoint memory point = registeredPoints[i];
+            if(point.blockNumber == 0) {
+                vars.tmpPassedPoint = i+1;
+                continue;
+            }
             /**
              * @dev Check whether this reward velocity point is valid and has
                not applied yet.
@@ -164,7 +168,7 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         /**
          * @dev Update the reward lane parameters with the tmp variables.
          */
-        if(vars.memLastBlockNum != vars.tmpLastBlockNum) lastBlockNum = vars.memThisBlockNum;
+        if(vars.memLastBlockNum != vars.tmpLastBlockNum) lastBlockNum = vars.tmpLastBlockNum;
         if(vars.memPassedPoint != vars.tmpPassedPoint) passedPoint = vars.tmpPassedPoint;
         if(vars.memRewardLane != vars.tmpRewardLane) rewardLane = vars.tmpRewardLane;
         if(vars.memRewardPerBlock != vars.tmpRewardPerBlock) rewardPerBlock = vars.tmpRewardPerBlock;
@@ -186,11 +190,14 @@ contract internalModule is storageModule, eventModule, safeMathModule {
         uint256 _rewardPerBlock,
         uint256 _decrementUnitPerBlock,
         uint256 delta) internal pure returns (uint256, uint256) {
+            uint256 executableDelta = safeDiv(_rewardPerBlock, _decrementUnitPerBlock);
+            if(delta > executableDelta) delta = executableDelta;
+            _rewardPerBlock = _getNewRewardPerBlock(_rewardPerBlock, _decrementUnitPerBlock, delta);
+
             if(_totalDeposit != 0) {
                 uint256 distance = expMul( _meanOfInactiveLane(_rewardPerBlock, delta, _decrementUnitPerBlock), safeMul( expDiv(one, _totalDeposit), delta) );
-                uint256 newRewardLane = safeAdd(_rewardLane, distance);
-                uint256 newRewardPerBlock = _getNewRewardPerBlock(_rewardPerBlock, _decrementUnitPerBlock, delta);
-                return (newRewardLane, newRewardPerBlock);
+                _rewardLane = safeAdd(_rewardLane, distance);
+                return (_rewardLane, _rewardPerBlock);
             }
             return (_rewardLane, _rewardPerBlock);
     }
@@ -218,12 +225,10 @@ contract internalModule is storageModule, eventModule, safeMathModule {
     function _deleteRegisteredRewardVelocity(uint256 _index) internal {
         uint256 len = registeredPoints.length;
         require(len != 0 && _index < len, "error: no elements in registeredPoints");
+
         RewardVelocityPoint memory point = registeredPoints[_index];
         emit DeleteRegisterRewardParams(_index, point.blockNumber, point.rewardPerBlock, point.decrementUnitPerBlock, len-1);
-        for(uint i=_index; i<len-1; i++) {
-            registeredPoints[i] = registeredPoints[i+1];
-        }
-        registeredPoints.pop();
+        delete registeredPoints[_index];
     }
 
     /**
@@ -248,18 +253,14 @@ contract internalModule is storageModule, eventModule, safeMathModule {
             == ( (2na + (n-1)d) / 2 ) / n
             caveat: use safeSub() to avoid the case that d is negative
         */
-        if (n > 0 )
-            return safeDiv(safeSub( safeMul(safeMul(2,a), n), safeMul(safeMul(n, safeSub(n,1)), d)), safeMul(2, n));
+        if (n > 0)
+            return safeDiv(safeSub( safeMul(2,a), safeMul( safeSub(n,1), d) ), 2);
         else
             return 0;
     }
 
     function _getNewRewardPerBlock(uint256 before, uint256 dec, uint256 delta) internal pure returns (uint256) {
-        uint256 tmp = safeMul(dec, delta);
-        if (before > tmp)
-            return safeSub(before, tmp);
-        else
-            return 0;
+        return safeSub(before, safeMul(dec, delta));
     }
 
     function _setClaimLock(bool lock) internal {
@@ -270,5 +271,10 @@ contract internalModule is storageModule, eventModule, safeMathModule {
     function _setWithdrawLock(bool lock) internal {
         emit WithdrawLock(lock);
         withdrawLock = lock;
+    }
+
+    function _ownershipTransfer(address to) internal {
+        emit OwnershipTransfer(msg.sender, to);
+        owner = to;
     }
 }

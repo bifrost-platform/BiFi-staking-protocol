@@ -8,9 +8,14 @@ contract eventModule {
     event Claim(address userAddr, uint256 amount);
     event UpdateRewardParams(uint256 atBlockNumber, uint256 rewardPerBlock, uint256 decrementUnitPerBlock);
 
-    /// @dev Events for admin actions
+    /// @dev Events for admin actions below
+
+    /// @dev Contracts Access Control
     event ClaimLock(bool lock);
     event WithdrawLock(bool lock);
+    event OwnershipTransfer(address from, address to);
+
+    /// @dev Distribution Model Parameter editer
     event SetRewardParams(uint256 rewardPerBlock, uint256 decrementUnitPerBlock);
     event RegisterRewardParams(uint256 atBlockNumber, uint256 rewardPerBlock, uint256 decrementUnitPerBlock);
     event DeleteRegisterRewardParams(uint256 index, uint256 atBlockNumber, uint256 rewardPerBlock, uint256 decrementUnitPerBlock, uint256 arrayLen);
