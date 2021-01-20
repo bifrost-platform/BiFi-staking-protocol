@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.6.12;
 
+// from: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol
+// Subject to the MIT license.
+
 /**
  * @title BiFi's safe-math Contract
  * @author BiFi(seinmyung25, Miller-kk, tlatkdgus1, dongchangYoo)
