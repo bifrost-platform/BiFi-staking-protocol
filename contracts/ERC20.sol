@@ -9,7 +9,7 @@ contract ERC20 {
     string symbol;
     string name;
     uint8 decimals = 18;
-    uint256 totalSupply = 1000 * 1e9 * 1e18; // token amount: 1000 Bilions
+    uint256 public totalSupply = 1000 * 1e9 * 1e18; // token amount: 1000 Bilions
 
     // Owner of this contract
     address public owner;
